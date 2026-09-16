@@ -1,0 +1,38 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: hit-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+      - EXTERNAL_USERS_API_URL=https://jsonplaceholder.typicode.com
+      - MAX_CONCURRENCY=10
+      - REQUEST_TIMEOUT=10.0
+      - MAX_BATCH_SIZE=100
+      - CORS_ORIGINS=["http://localhost:3000","http://127.0.0.1:3000"]
+    restart: unless-stopped
+    networks:
+      - hit-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: hit-frontend
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - hit-network
+
+networks:
+  hit-network:
+    driver: bridge
