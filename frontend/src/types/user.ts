@@ -6,6 +6,7 @@ export interface User {
   phone?: string | null;
   website?: string | null;
   company_name?: string | null;
+  cached?: boolean;
 }
 
 export interface FailedUserDetail {
@@ -18,7 +19,9 @@ export interface BatchMetadata {
   total: number;
   success_count: number;
   failed_count: number;
+  cache_hits: number;
   execution_time_ms: number;
+  request_id?: string;
 }
 
 export interface UserBatchResponse {

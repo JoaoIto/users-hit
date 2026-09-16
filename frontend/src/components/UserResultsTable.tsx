@@ -98,7 +98,14 @@ export const UserResultsTable: React.FC<UserResultsTableProps> = ({ users }) => 
               <tr key={user.id}>
                 <td className="cell-id">#{user.id}</td>
                 <td>
-                  <div className="cell-name">{user.name}</div>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <span className="cell-name">{user.name}</span>
+                    {user.cached && (
+                      <span className="cell-cache-badge" title="Recuperado instantaneamente do TTL Cache em memória">
+                        ⚡ Cache
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td>
                   {user.email ? (

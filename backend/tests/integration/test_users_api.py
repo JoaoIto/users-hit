@@ -160,3 +160,32 @@ async def test_health_check_endpoint(async_client: httpx.AsyncClient):
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "healthy"
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_users_fetch_cache_hit_workflow(async_client: httpx.AsyncClient, mock_user_payload: dict):
+    """Teste Diferencial: Validação do TTL Cache (primeira chamada MISS, segunda chamada HIT instantâneo)."""
+    user1 = {**mock_user_payload, "id": 1, "name": "Cache Test User"}
+
+    # Rota mockada: monitoramos a quantidade de chamadas
+    route = respx.get("https://jsonplaceholder.typicode.com/users/1").mock(
+        return_value=httpx.Response(200, json=user1)
+    )
+
+    # 1ª chamada: Cache MISS (consulta a rede)
+    res1 = await async_client.post("/api/users/fetch", json={"user_ids": [1]})
+    assert res1.status_code == 200
+    data1 = res1.json()
+    assert data1["meta"]["cache_hits"] == 0
+    assert data1["users"][0]["cached"] is False
+    assert route.call_count == 1
+
+    # 2ª chamada idêntica: Cache HIT (retorna da memória sem bater na rede)
+    res2 = await async_client.post("/api/users/fetch", json={"user_ids": [1]})
+    assert res2.status_code == 200
+    data2 = res2.json()
+    assert data2["meta"]["cache_hits"] == 1
+    assert data2["users"][0]["cached"] is True
+    # O mock externo continua com apenas 1 chamada efetuada!
+    assert route.call_count == 1

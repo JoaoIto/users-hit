@@ -99,6 +99,16 @@ export const App: React.FC = () => {
         </div>
 
         <div className="kpi-item">
+          <div className="kpi-label">Cache Hits</div>
+          <div className="kpi-value-row">
+            <span className="kpi-value">{meta ? meta.cache_hits : '0'}</span>
+            <span className="kpi-badge" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24' }}>
+              TTL 60s
+            </span>
+          </div>
+        </div>
+
+        <div className="kpi-item">
           <div className="kpi-label">Tempo Total de Execução</div>
           <div className="kpi-value-row">
             <span className="kpi-value">

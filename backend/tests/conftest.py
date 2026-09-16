@@ -1,10 +1,13 @@
+import asyncio
 from typing import AsyncGenerator, Dict
 import httpx
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport
 
+from app.core.cache import get_cache
 from app.core.config import Settings, get_settings
+from app.core.database import init_db
 from app.main import app
 
 
@@ -16,17 +19,23 @@ def get_test_settings() -> Settings:
         MAX_CONCURRENCY=5,
         REQUEST_TIMEOUT=2.0,
         MAX_BATCH_SIZE=100,
+        CACHE_TTL_SECONDS=60,
+        DATABASE_URL="sqlite+aiosqlite:///:memory:",
         RETRY_MAX_ATTEMPTS=2,
         RETRY_INITIAL_WAIT=0.01,
         RETRY_MAX_WAIT=0.05,
     )
 
 
-@pytest.fixture(autouse=True)
-def override_settings():
+@pytest_asyncio.fixture(autouse=True)
+async def setup_test_environment():
     test_settings = get_test_settings()
     app.dependency_overrides[get_settings] = lambda: test_settings
+    await get_cache().clear()
+    await init_db()
     yield
+    await asyncio.sleep(0.05)
+    await get_cache().clear()
     app.dependency_overrides.clear()
 
 

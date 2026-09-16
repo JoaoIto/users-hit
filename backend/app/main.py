@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.v1.router import api_v1_router
 from app.core.config import get_settings
+from app.core.database import init_db
 from app.core.logging import get_logger, setup_logging
 
 setup_logging()
@@ -40,6 +41,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         follow_redirects=True,
     )
     app.state.http_client = client
+
+    # Inicialização assíncrona do banco de dados (SQLite/PostgreSQL)
+    await init_db()
 
     yield
 

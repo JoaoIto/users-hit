@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import List
+from typing import List, Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,6 +14,12 @@ class Settings(BaseSettings):
     REQUEST_TIMEOUT: float = 10.0
     MAX_CONCURRENCY: int = 10
     MAX_BATCH_SIZE: int = 100
+
+    # Cache Configuration
+    CACHE_TTL_SECONDS: int = 60
+
+    # Database Configuration (PostgreSQL / SQLite fallback)
+    DATABASE_URL: Optional[str] = None
 
     # Retry Settings (Tenacity)
     RETRY_MAX_ATTEMPTS: int = 3

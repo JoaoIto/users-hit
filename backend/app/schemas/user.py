@@ -35,6 +35,7 @@ class UserResponse(BaseModel):
     phone: Optional[str] = Field(default=None, description="Telefone de contato")
     website: Optional[str] = Field(default=None, description="Site ou portfólio")
     company_name: Optional[str] = Field(default=None, description="Nome da empresa do usuário")
+    cached: bool = Field(default=False, description="Flag indicando se o dado foi obtido de cache em memória (TTL)")
 
 
 class FailedUserDetail(BaseModel):
@@ -47,7 +48,9 @@ class BatchMetadata(BaseModel):
     total: int = Field(..., description="Total de IDs únicos solicitados no lote")
     success_count: int = Field(..., description="Total de usuários obtidos com sucesso")
     failed_count: int = Field(..., description="Total de falhas registradas")
+    cache_hits: int = Field(default=0, description="Total de registros recuperados via cache em memória")
     execution_time_ms: float = Field(..., description="Tempo total de processamento em milissegundos")
+    request_id: Optional[str] = Field(default=None, description="ID único da requisição para observabilidade e auditoria")
 
 
 class UserBatchResponse(BaseModel):
@@ -62,7 +65,7 @@ class UserBatchResponse(BaseModel):
         examples=[[3, 4]],
     )
 
-    # Campos enriquecidos para observabilidade e detalhamento técnico sênior
+    # Campos enriquecidos para observabilidade e diferenciação técnica
     errors: List[FailedUserDetail] = Field(
         default_factory=list,
         description="Detalhamento semântico enriquecido de cada falha (status code e motivo)",

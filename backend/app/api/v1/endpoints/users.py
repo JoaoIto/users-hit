@@ -1,6 +1,8 @@
-from fastapi import APIRouter, Depends, Request, status
+import uuid
+from fastapi import APIRouter, Depends, Header, Request, status
 import httpx
 
+from app.core.cache import BaseCache, get_cache
 from app.core.config import Settings, get_settings
 from app.core.logging import get_logger
 from app.providers.external_user_provider import ExternalUserProvider
@@ -15,7 +17,6 @@ def get_http_client(request: Request) -> httpx.AsyncClient:
     """Recupera a instância compartilhada de httpx.AsyncClient mantida no app.state."""
     client = getattr(request.app.state, "http_client", None)
     if client is None:
-        # Fallback defensivo caso o lifespan não esteja ativo (ex: testes manuais)
         return httpx.AsyncClient()
     return client
 
@@ -23,6 +24,7 @@ def get_http_client(request: Request) -> httpx.AsyncClient:
 def get_user_fetch_service(
     client: httpx.AsyncClient = Depends(get_http_client),
     settings: Settings = Depends(get_settings),
+    cache: BaseCache = Depends(get_cache),
 ) -> UserFetchService:
     """Dependency Provider para injeção de dependência desacoplada da camada de serviço."""
     provider = ExternalUserProvider(
@@ -34,6 +36,8 @@ def get_user_fetch_service(
     return UserFetchService(
         provider=provider,
         max_concurrency=settings.MAX_CONCURRENCY,
+        cache=cache,
+        cache_ttl=settings.CACHE_TTL_SECONDS,
     )
 
 
@@ -44,8 +48,8 @@ def get_user_fetch_service(
     summary="Consulta concorrente de usuários por lote de IDs",
     description=(
         "Recebe uma lista de IDs de usuários, consulta a API externa de forma assíncrona "
-        "com controle de concorrência e tolerância a falhas parciais, retornando os "
-        "usuários encontrados e os erros isolados."
+        "com controle de concorrência, tolerância a falhas parciais, TTL cache em memória "
+        "e auditoria automática de lote."
     ),
     responses={
         200: {
@@ -59,8 +63,10 @@ def get_user_fetch_service(
 )
 async def fetch_users_batch(
     payload: UserFetchRequest,
+    x_request_id: str | None = Header(default=None),
     service: UserFetchService = Depends(get_user_fetch_service),
 ) -> UserBatchResponse:
-    logger.info("api_user_fetch_batch_received", requested_count=len(payload.user_ids))
-    result = await service.fetch_users_batch(payload.user_ids)
+    req_id = x_request_id or str(uuid.uuid4())
+    logger.info("api_user_fetch_batch_received", request_id=req_id, requested_count=len(payload.user_ids))
+    result = await service.fetch_users_batch(payload.user_ids, request_id=req_id)
     return result
