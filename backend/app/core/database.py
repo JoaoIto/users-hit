@@ -40,6 +40,9 @@ def get_db_url() -> str:
         if url.startswith("postgresql://"):
             url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
         return url
+    import os
+    if os.getenv("VERCEL"):
+        return "sqlite+aiosqlite:////tmp/batch_history.db"
     return "sqlite+aiosqlite:///./batch_history.db"
 
 
