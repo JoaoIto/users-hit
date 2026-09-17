@@ -1,4 +1,4 @@
-﻿import os
+import os
 import sys
 
 # Garante que o diretorio raiz do backend esteja no sys.path

@@ -1,4 +1,4 @@
-﻿import os
+import os
 import sys
 
 backend_dir = os.path.dirname(os.path.abspath(__file__))
