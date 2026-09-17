@@ -41,9 +41,16 @@ def get_db_url() -> str:
             url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
         return url
     import os
-    if os.getenv("VERCEL"):
+    is_serverless = (
+        bool(os.getenv("VERCEL"))
+        or bool(os.getenv("VERCEL_ENV"))
+        or bool(os.getenv("AWS_LAMBDA_FUNCTION_NAME"))
+        or bool(os.getenv("LAMBDA_TASK_ROOT"))
+        or not os.access(".", os.W_OK)
+    )
+    if is_serverless:
         return "sqlite+aiosqlite:////tmp/batch_history.db"
-    return "sqlite+aiosqlite:///./batch_history.db"
+    return "sqlite+aiosqlite:///./batch_history.db" 
 
 
 db_url = get_db_url()

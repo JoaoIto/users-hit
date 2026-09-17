@@ -43,7 +43,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     app.state.http_client = client
 
     # Inicialização assíncrona do banco de dados (SQLite/PostgreSQL)
-    await init_db()
+    try:
+        await init_db()
+    except Exception as db_exc:
+        logger.warning("init_db_error_ignored_for_serverless", error=str(db_exc))
 
     yield
 
@@ -66,6 +69,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
+    allow_origin_regex=r"^https://.*\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
