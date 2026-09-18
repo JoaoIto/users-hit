@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-"""
-Runner Unificado de Comando Único (Full Stack)
-Inicializa o Backend (FastAPI/Uvicorn) e Frontend (Vite/React) de forma concorrente,
-gerenciando ciclo de vida, dependências e finalização limpa de processos.
-"""
-
 import atexit
 import os
 import shutil
@@ -34,17 +27,17 @@ RESET = "\033[0m"
 
 
 def print_step(message: str) -> None:
-    bullet = "➜" if not IS_WINDOWS else ">>"
+    bullet = ">>" if IS_WINDOWS else "➜"
     print(f"{CYAN}{bullet}{RESET} {BOLD}{message}{RESET}")
 
 
 def print_success(message: str) -> None:
-    check = "✔" if not IS_WINDOWS else "[OK]"
+    check = "[OK]" if IS_WINDOWS else "✔"
     print(f"{GREEN}{check}{RESET} {message}")
 
 
 def print_warning(message: str) -> None:
-    warn = "⚠" if not IS_WINDOWS else "[AVISO]"
+    warn = "[AVISO]" if IS_WINDOWS else "⚠"
     print(f"{YELLOW}{warn}{RESET} {message}")
 
 
@@ -141,11 +134,11 @@ def kill_process_tree(proc: subprocess.Popen) -> None:
 
 def print_banner() -> None:
     """Exibe o painel visual formatado no terminal conforme especificado."""
-    rocket = "🚀" if not IS_WINDOWS else "[*]"
-    pc = "💻" if not IS_WINDOWS else ">>"
-    gear = "⚙️" if not IS_WINDOWS else ">>"
-    book = "📖" if not IS_WINDOWS else ">>"
-    health = "🩺" if not IS_WINDOWS else ">>"
+    rocket = "[*]" if IS_WINDOWS else "🚀"
+    pc = ">>" if IS_WINDOWS else "💻"
+    gear = ">>" if IS_WINDOWS else "⚙️"
+    book = ">>" if IS_WINDOWS else "📖"
+    health = ">>" if IS_WINDOWS else "🩺"
 
     banner = f"""
 {CYAN}================================================================={RESET}
@@ -161,10 +154,73 @@ def print_banner() -> None:
     print(banner)
 
 
+def run_test_suite(python_bin: str, npm_bin: str, root_dir: str) -> int:
+    """Executa a suíte completa de testes automatizados do backend e frontend com relatório consolidado."""
+    bullet = ">>" if IS_WINDOWS else "➜"
+    check = "[OK]" if IS_WINDOWS else "✔"
+    cross = "[FALHA]" if IS_WINDOWS else "✖"
+
+    print(f"\n{CYAN}================================================================={RESET}")
+    print(f"  {BOLD}HIT DIGITAL - EXECUÇÃO CONSOLIDADA DA SUÍTE DE TESTES{RESET}")
+    print(f"{CYAN}================================================================={RESET}\n")
+
+    # 1. Testes do Backend (Pytest + Cobertura >95%)
+    print_step("Executando suíte do Backend (Pytest + Coverage >95%)...")
+    backend_dir = os.path.join(root_dir, "backend")
+    backend_cmd = [
+        python_bin,
+        "-m",
+        "pytest",
+        "tests/",
+        "-v",
+        "--cov=app",
+        "--cov-report=term-missing",
+        "--cov-fail-under=95",
+    ]
+    backend_res = subprocess.run(backend_cmd, cwd=backend_dir)
+    backend_ok = backend_res.returncode == 0
+
+    if backend_ok:
+        print(f"\n{GREEN}{check}{RESET} {BOLD}Backend: 100% dos testes aprovados e cobertura >95% atingida!{RESET}\n")
+    else:
+        print(f"\n{YELLOW}{cross}{RESET} {BOLD}Backend: Falha na suíte de testes ou meta de cobertura não atingida.{RESET}\n")
+
+    # 2. Testes do Frontend (Vitest + Cobertura >90%)
+    print_step("Executando suíte do Frontend (Vitest + Coverage >90%)...")
+    frontend_dir = os.path.join(root_dir, "frontend")
+    frontend_cmd = [npm_bin, "run", "test:coverage"]
+    frontend_res = subprocess.run(frontend_cmd, cwd=frontend_dir)
+    frontend_ok = frontend_res.returncode == 0
+
+    if frontend_ok:
+        print(f"\n{GREEN}{check}{RESET} {BOLD}Frontend: 100% dos testes aprovados e cobertura >90% atingida!{RESET}\n")
+    else:
+        print(f"\n{YELLOW}{cross}{RESET} {BOLD}Frontend: Falha na suíte de testes ou meta de cobertura não atingida.{RESET}\n")
+
+    # Resumo Final Consolidado
+    print(f"{CYAN}================================================================={RESET}")
+    if backend_ok and frontend_ok:
+        print(f"  {GREEN}{BOLD}{check} TODOS OS TESTES PASSARAM COM SUCESSO! COBERTURA HOMOLOGADA!{RESET}")
+        print(f"{CYAN}================================================================={RESET}\n")
+        return 0
+    else:
+        print(f"  {YELLOW}{BOLD}{cross} FALHA NA VERIFICAÇÃO AUTOMATIZADA DE QUALIDADE DE CÓDIGO.{RESET}")
+        print(f"{CYAN}================================================================={RESET}\n")
+        return 1
+
+
 def main() -> None:
     root_dir = os.path.abspath(os.path.dirname(__file__))
     python_bin = resolve_python_executable(root_dir)
     npm_bin = resolve_npm_executable()
+
+    if "--test" in sys.argv:
+        print(f"\n{BOLD}Modo de Testes Automatizados Ativado (--test)...{RESET}")
+        print(f"{DIM}Python: {python_bin} | npm: {npm_bin}{RESET}\n")
+        ensure_backend_dependencies(python_bin, root_dir)
+        ensure_frontend_dependencies(npm_bin, root_dir)
+        exit_code = run_test_suite(python_bin, npm_bin, root_dir)
+        sys.exit(exit_code)
 
     print(f"\n{BOLD}Inicializando Runner Full Stack Hit Digital...{RESET}")
     print(f"{DIM}OS: {sys.platform} | Python: {python_bin} | npm: {npm_bin}{RESET}\n")

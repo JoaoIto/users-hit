@@ -56,3 +56,6 @@ Thumbs.db
 *.db
 *.sqlite3
 
+
+coverage/
+frontend/coverage/

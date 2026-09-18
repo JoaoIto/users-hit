@@ -13,6 +13,7 @@ export class ApiError extends Error {
     this.name = 'ApiError';
     this.status = status;
     this.data = data;
+    Object.setPrototypeOf(this, ApiError.prototype);
   }
 }
 
@@ -41,12 +42,13 @@ export async function apiClient<T>(endpoint: string, options: RequestOptions = {
 
     if (!response.ok) {
       let errorData: any;
+      const rawText = await response.text();
       try {
-        errorData = await response.json();
+        errorData = JSON.parse(rawText);
       } catch {
-        errorData = await response.text();
+        errorData = rawText;
       }
-      const message = errorData?.detail || errorData?.message || `Erro HTTP ${response.status}: ${response.statusText}`;
+      const message = errorData?.detail || errorData?.message || (typeof errorData === 'string' && errorData.trim() ? errorData : `Erro HTTP ${response.status}: ${response.statusText}`);
       throw new ApiError(message, response.status, errorData);
     }
 
@@ -56,7 +58,7 @@ export async function apiClient<T>(endpoint: string, options: RequestOptions = {
     if (err.name === 'AbortError') {
       throw new ApiError('Tempo limite excedido na comunicação com o servidor.', 504);
     }
-    if (err instanceof ApiError) {
+    if (err instanceof ApiError || err?.name === 'ApiError') {
       throw err;
     }
     throw new ApiError(

@@ -8,7 +8,7 @@ on:
 
 jobs:
   backend-tests:
-    name: Backend Test Suite (Pytest + Coverage)
+    name: Backend Test Suite (Pytest + Coverage >95%)
     runs-on: ubuntu-latest
 
     steps:
@@ -27,13 +27,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run Pytest Suite with Coverage
+      - name: Run Pytest Suite with Strict Coverage Threshold
         working-directory: ./backend
         run: |
-          pytest tests/ -v --cov=app --cov-report=term-missing
+          pytest tests/ -v --cov=app --cov-report=term-missing --cov-fail-under=95
 
-  frontend-build:
-    name: Frontend Build & Type Check
+  frontend-tests-and-build:
+    name: Frontend Test Suite (Vitest + Coverage >90%) & Build
     runs-on: ubuntu-latest
 
     steps:
@@ -50,6 +50,10 @@ jobs:
       - name: Install Dependencies
         working-directory: ./frontend
         run: npm ci
+
+      - name: Run Vitest Suite with Strict Coverage Threshold
+        working-directory: ./frontend
+        run: npm run test:coverage
 
       - name: Typecheck and Build Bundle
         working-directory: ./frontend
